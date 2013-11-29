@@ -1,6 +1,6 @@
 <?php
 
-namespace deit\console\option;
+namespace deit\console\parser;
 
 /**
  * Console parser exception

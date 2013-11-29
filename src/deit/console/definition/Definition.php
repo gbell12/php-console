@@ -1,6 +1,7 @@
 <?php
 
-namespace deit\console\option;
+namespace deit\console\definition;
+use deit\console\ConsoleInterface;
 
 /**
  * Console definition
@@ -87,7 +88,7 @@ class Definition {
 	 * @param   string $name
 	 * @return  bool
 	 */
-	public function hasOption($name) {
+	public function hasOption($name) { //TODO: update for long and short name
 		return isset($this->options[$name]);
 	}
 
@@ -96,7 +97,7 @@ class Definition {
 	 * @param   string  $name
 	 * @return  Option|null
 	 */
-	public function getOption($name) {
+	public function getOption($name) { //TODO: update for long and short name
 		if (isset($this->options[$name])) {
 			return $this->options[$name];
 		} else {
@@ -109,7 +110,7 @@ class Definition {
 	 * @param   string  $shortcut
 	 * @return  Option|null
 	 */
-	public function getOptionByShortcut($shortcut) {
+	public function getOptionByShortcut($shortcut) { //TODO: update for long and short name
 		foreach ($this->options as $option) {
 			if ($option->getShortcut() == $shortcut) {
 				return $option;
@@ -123,9 +124,27 @@ class Definition {
 	 * @param   Option $option
 	 * @return  $this
 	 */
-	public function addOption(Option $option) {
-		$this->options[$option->getName()] = $option;
+	public function addOption(Option $option) { //TODO: update for long and short name
+		$this->options[$option->getShortName()] = $option;
 		return $this;
+	}
+
+	/**
+	 * Validates that the console meets the definition
+	 * @param   ConsoleInterface $console
+	 * @return  $this
+	 */
+	public function validate(ConsoleInterface $console) {
+
+		foreach ($this->getOptions() as $option) {
+
+			//make sure any required options have been defined
+			if ($option->isRequired() && !$console->hasOption($option->getShortName())) {
+				throw new \RuntimeException("The \"{$option->getShortName()}\" option is required.");
+			}
+
+		}
+
 	}
 
 } 

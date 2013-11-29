@@ -1,44 +1,53 @@
 <?php
 
 namespace deit\console;
-use deit\console\option\Option;
-use deit\console\option\Options;
+use deit\console\definition\Option;
 
 include __DIR__.'/bootstrap.php';
 
 class MyCmd extends Command {
 
 	public function configure() {
+
+		$clean = new Option('clean');
+
+		$theme = new Option('theme');
+		$theme->setMode(Option::OPTION_REQUIRED | Option::VALUE_REQUIRED);
+
+		$content = new Option('content');
+		$content->setMode(Option::OPTION_REQUIRED | Option::VALUE_REQUIRED);
+
+		$output = new Option('output');
+		$output->setMode(Option::VALUE_REQUIRED);
+
 		$this->getDefinition()
 			->setName('MyCmd')
 			->setDescription('A test command')
-			->addOption(new Option('clean'))
-			->addOption(new Option('output', 'o', Option::OPTION_REQUIRED | Option::VALUE_REQUIRED))
+			->addOption($clean)
+			->addOption($theme)
+			->addOption($content)
+			->addOption($output)
 		;
 	}
 
 	/**
 	 * @inheritdoc
 	 */
-	public function execute(Options $options) {
-		$this->getOutputStream()->write('test');
+	public function execute(AbstractConsole $console) {
+		$console->getOutputStream()->write('test');
 	}
 
 }
 
-exit(MyCmd::run(array(
-	'--clean',
-	'--output=c:\uf-dist',
-	//'--test'
-)));
-
-/*
-$opt = new Options();
-$opt
-	->setOption('clean')
+$console = new StandardConsole();
+$console
+	->setOption('clean', null)
+	->setOption('theme', null)
 	->setOption('output', 'c:\uf-dist')
 ;
 
-exit(MyCmd::run($opt));
+$app = new Application($console);
+$app->addCommand(new MyCmd());
+$app->run();
 
-*/
+echo "\nDONE\n";
