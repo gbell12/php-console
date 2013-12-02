@@ -135,7 +135,7 @@ class Application {
 
 		//run the command
 		try {
-			$exitCode = $command->execute($console);
+			$exitCode = $command->main($console);
 		} catch (\Exception $exception) {
 			$console->getErrorStream()->write("Error: {$exception->getTraceAsString()}\n");
 			return -1;

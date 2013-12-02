@@ -38,10 +38,10 @@ abstract class Command {
 	}
 
 	/**
-	 * Executes the command
+	 * The command main method
 	 * @param   ConsoleInterface    $console    The command console
 	 * @return  int                             The command exit code
 	 */
-	abstract public function execute(ConsoleInterface $console);
+	abstract public function main(ConsoleInterface $console);
 
 } 

@@ -33,7 +33,7 @@ class MyCmd extends Command {
 	/**
 	 * @inheritdoc
 	 */
-	public function execute(AbstractConsole $console) {
+	public function main(AbstractConsole $console) {
 		$console->getOutputStream()->write('test');
 	}
 
