@@ -80,18 +80,26 @@ abstract class AbstractConsole implements ConsoleInterface {
 	 * @inheritdoc
 	 */
 	public function hasOption($name) {
-		return array_key_exists($name, $this->options);
+		$names = explode('|', $name, 2);
+		foreach ($names as $name) {
+			if (array_key_exists($name, $this->options)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
 	 * @inheritdoc
 	 */
 	public function getOption($name, $value = null) {
-		if (array_key_exists($name, $this->options)) {
-			return $this->options[$name];
-		} else {
-			return $value;
+		$names = explode('|', $name, 2);
+		foreach ($names as $name) {
+			if (array_key_exists($name, $this->options)) {
+				return $this->options[$name];
+			}
 		}
+		return $value;
 	}
 
 	/**

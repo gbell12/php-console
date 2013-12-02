@@ -49,12 +49,12 @@ class Option {
 	public function __construct($name, $mode = self::VALUE_NONE, $default = null) {
 
 		//sets the name
-		$name = explode('|', $name, 2);
-		foreach ((array) $name as $n) {
-			if (strlen($n) > 1) {
-				$this->setLongName($n);
+		$names = explode('|', $name, 2);
+		foreach ($names as $name) {
+			if (strlen($name) > 1) {
+				$this->setLongName($name);
 			} else {
-				$this->setShortName($n);
+				$this->setShortName($name);
 			}
 		}
 
