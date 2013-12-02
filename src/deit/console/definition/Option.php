@@ -51,7 +51,7 @@ class Option {
 		//sets the name
 		$name = explode('|', $name, 2);
 		foreach ((array) $name as $n) {
-			if (strlen($name) > 1) {
+			if (strlen($n) > 1) {
 				$this->setLongName($n);
 			} else {
 				$this->setShortName($n);
