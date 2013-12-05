@@ -32,13 +32,13 @@ abstract class AbstractConsole implements ConsoleInterface {
 	 * The options
 	 * @var     mixed[string]
 	 */
-	protected $options    = [];
+	protected $options    = array();
 
 	/**
 	 * The arguments
 	 * @var     mixed[string]
 	 */
-	protected $arguments  = [];
+	protected $arguments  = array();
 
 	/**
 	 * @inheritdoc
@@ -80,7 +80,13 @@ abstract class AbstractConsole implements ConsoleInterface {
 	 * @inheritdoc
 	 */
 	public function hasOption($name) {
-		$names = explode('|', $name, 2);
+				
+		if (is_array($name)) {
+			$names = $name;
+		} else {
+			$names = explode('|', $name, 2);
+		}
+		
 		foreach ($names as $name) {
 			if (array_key_exists($name, $this->options)) {
 				return true;
@@ -93,7 +99,13 @@ abstract class AbstractConsole implements ConsoleInterface {
 	 * @inheritdoc
 	 */
 	public function getOption($name, $value = null) {
-		$names = explode('|', $name, 2);
+		
+		if (is_array($name)) {
+			$names = $name;
+		} else {
+			$names = explode('|', $name, 2);
+		}
+		
 		foreach ($names as $name) {
 			if (array_key_exists($name, $this->options)) {
 				return $this->options[$name];
@@ -110,4 +122,45 @@ abstract class AbstractConsole implements ConsoleInterface {
 		return $this;
 	}
 
+	/**
+	 * @inheritdoc
+	 */
+	public function getArguments() {
+		return $this->arguments;
+	}
+	
+	/**
+	 * @inheritdoc
+	 */
+	public function setArguments(array $arguments) {
+		$this->arguments = $arguments;
+		return $this;
+	}
+	
+	/**
+	 * @inheritdoc
+	 */
+	public function hasArgument($i) {
+		return array_key_exists($i, $this->arguments);
+	}
+	
+	/**
+	 * @inheritdoc
+	 */
+	public function getArgument($i, $default = null) {
+		if (array_key_exists($i, $this->arguments)) {
+			return $this->arguments[$i];
+		} else {
+			return $default;
+		}
+	}
+	
+	/**
+	 * @inheritdoc
+	 */
+	public function setArgument($i, $value) {
+		$this->arguments[$i] = $value;
+		return $this;
+	}
+	
 } 

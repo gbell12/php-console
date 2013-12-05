@@ -18,7 +18,7 @@ class Application {
 	 * The commands
 	 * @var     Command[]
 	 */
-	private $commands = [];
+	private $commands = array();
 
 	/**
 	 * Constructs the application
@@ -119,7 +119,12 @@ class Application {
 
 		//get the console
 		$console = $this->getConsole();
-
+		
+		//check for a name argument
+		if (is_null($name)) {
+			$name = $console->getArgument(1);
+		}
+		
 		//get the command to run
 		if (!($command = $this->getCommand($name))) {
 			throw new \InvalidArgumentException("No commands have been added.");
@@ -132,12 +137,12 @@ class Application {
 			$console->getErrorStream()->write("Error: {$exception->getMessage()}\n");
 			return -1;
 		}
-
+		
 		//run the command
 		try {
 			$exitCode = $command->main($console);
 		} catch (\Exception $exception) {
-			$console->getErrorStream()->write("Error: {$exception->getTraceAsString()}\n");
+			$console->getErrorStream()->write("Error: {$exception->getMessage()}\n");
 			return -1;
 		}
 

@@ -16,6 +16,12 @@ class ArgvParser implements ParserInterface {
 	 * @var     string[]
 	 */
 	private $argv;
+	
+	/**
+	 * The argument index
+	 * @var 	int
+	 */
+	private $argIndex = 0;
 
 	/**
 	 * Constructs the parser
@@ -46,7 +52,7 @@ class ArgvParser implements ParserInterface {
 			} else if (strpos($arg, '-') === 0) {
 				$this->parseShortOption($console, $arg);
 			} else {
-				//argument
+				$this->parseArgument($console, $arg);
 			}
 
 			next($this->argv);
@@ -125,6 +131,17 @@ class ArgvParser implements ParserInterface {
 		}
 
 		return $this;
+	}
+	
+	/**
+	 * Parses an argument
+	 * @param   ConsoleInterface    $console
+	 * @param   string              $arg
+	 * @return  $this
+	 * @throws
+	 */
+	public function parseArgument(ConsoleInterface $console, $arg) {
+		$console->setArgument($this->argIndex++, $arg);
 	}
 
 } 

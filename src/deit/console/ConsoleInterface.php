@@ -64,4 +64,10 @@ interface ConsoleInterface {
 	 */
 	public function setOption($name, $value = null);
 
+	public function getArguments();
+	public function setArguments(array $arguments);
+	public function hasArgument($i);
+	public function getArgument($i, $default = null);
+	public function setArgument($i, $value);
+	
 } 

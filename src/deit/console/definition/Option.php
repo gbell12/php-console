@@ -31,25 +31,45 @@ class Option {
 	 * The value mode
 	 * @var     int
 	 */
-	private $mode = 0;
+	private $mode;
 
 	/**
 	 * The default value
 	 * @var     string
 	 */
 	private $default;
+	
+	/**
+	 * The filter
+	 * @var 	callable
+	 */
+	private $filter;
+		
+	/**
+	 * The validator
+	 * @var 	callable
+	 */
+	private $validator;
 
 	/**
 	 * Constructs the option
 	 * @param   string|string[]     $name       The option name(s)
 	 * @param   int                 $mode       The option mode
 	 * @param   string              $default    The option default
+	 * @param   callable            $filter    	The option default
+	 * @param   callable            $validator  The option default
 	 * @throws
 	 */
-	public function __construct($name, $mode = self::VALUE_NONE, $default = null) {
+	public function __construct($name, $mode = self::VALUE_NONE, $default = null, callable $filter = null, callable $validator = null) {
 
 		//sets the name
-		$names = explode('|', $name, 2);
+				
+		if (is_array($name)) {
+			$names = $name;
+		} else {
+			$names = explode('|', $name, 2);
+		}
+		
 		foreach ($names as $name) {
 			if (strlen($name) > 1) {
 				$this->setLongName($name);
@@ -63,9 +83,40 @@ class Option {
 			->setMode($mode)
 			->setDefault($default)
 		;
+		
+		if (!is_null($filter)) {
+			$this->setFilter($filter);
+		}
+		
+		if (!is_null($validator)) {
+			$this->setValidator($validator);
+		}
 
 	}
+	
+	/**
+	 * Gets the full name
+	 * @return  string
+	 */
+	public function getName() {
+		if (empty($this->longName)) {
+			return $this->shortName;
+		} else {
+			return $this->longName;
+		}
+	}
 
+	/**
+	 * Gets all the names
+	 * @return 	string[]
+	 */
+	public function getNames() {
+		return array(
+			$this->getShortName(),
+			$this->getLongName(),
+		);
+	}
+	
 	/**
 	 * Gets the short name
 	 * @return  string
@@ -210,4 +261,40 @@ class Option {
 		return $this;
 	}
 
+	/**
+	 * Gets the filter
+	 * @return  callable
+	 */
+	public function getFilter() {
+		return $this->filter;
+	}
+
+	/**
+	 * Sets the filter
+	 * @param   callable $filter
+	 * @return  $this
+	 */
+	public function setFilter(callable $filter) {
+		$this->filter = $filter;
+		return $this;
+	}
+	
+	/**
+	 * Gets the validator
+	 * @return  callable
+	 */
+	public function getValidator() {
+		return $this->validator;
+	}
+
+	/**
+	 * Sets the default value
+	 * @param   callable $validator
+	 * @return  $this
+	 */
+	public function setValidator(callable $validator) {
+		$this->validator = $validator;
+		return $this;
+	}
+	
 } 

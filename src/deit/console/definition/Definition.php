@@ -25,13 +25,13 @@ class Definition {
 	 * The option definitions
 	 * @var     Option[string]
 	 */
-	private $options = [];
+	private $options = array();
 
 	/**
 	 * The argument definitions
 	 * @var     Argument[string]
 	 */
-	private $arguments = [];
+	private $arguments = array();
 
 	/**
 	 * The command version
@@ -89,30 +89,18 @@ class Definition {
 	 * @return  bool
 	 */
 	public function hasOption($name) { //TODO: update for long and short name
+		throw new \RuntimeException();
 		return isset($this->options[$name]);
 	}
 
 	/**
-	 * Gets an option
+	 * Gets an option from the short name
 	 * @param   string  $name
 	 * @return  Option|null
 	 */
-	public function getOption($name) { //TODO: update for long and short name
-		if (isset($this->options[$name])) {
-			return $this->options[$name];
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * Gets an option from the shortcut
-	 * @param   string  $shortcut
-	 * @return  Option|null
-	 */
-	public function getOptionByShortcut($shortcut) { //TODO: update for long and short name
+	public function getOptionByShortName($name) {
 		foreach ($this->options as $option) {
-			if ($option->getShortcut() == $shortcut) {
+			if ($option->getShortName() == $name) {
 				return $option;
 			}
 		}
@@ -120,12 +108,26 @@ class Definition {
 	}
 
 	/**
+	 * Gets an option from the long name
+	 * @param   string  $name
+	 * @return  Option|null
+	 */
+	public function getOptionByLongName($name) {
+		foreach ($this->options as $option) {
+			if ($option->getLongName() == $name) {
+				return $option;
+			}
+		}
+		return null;
+	}
+	
+	/**
 	 * Adds an option
 	 * @param   Option $option
 	 * @return  $this
 	 */
-	public function addOption(Option $option) { //TODO: update for long and short name
-		$this->options[$option->getShortName()] = $option;
+	public function addOption(Option $option) {
+		$this->options[] = $option;
 		return $this;
 	}
 
@@ -137,14 +139,39 @@ class Definition {
 	public function validate(ConsoleInterface $console) {
 
 		foreach ($this->getOptions() as $option) {
-
-			//make sure any required options have been defined
-			if ($option->isRequired() && !$console->hasOption($option->getShortName())) {
-				throw new \RuntimeException("The \"{$option->getShortName()}\" option is required.");
+			
+			//check whether the option is specified
+			if ($option->isRequired() && !$console->hasOption($option->getNames())) {
+				throw new \RuntimeException("Option \"{$option->getName()}\" is required.");
 			}
-
+						
+			//get the value
+			$value = $console->getOption($option->getNames(), $option->getDefault());
+			
+			//check whether a value is specified
+			if ($option->isValueRequired() && is_null($value)) {
+				throw new \RuntimeException("Option \"{$option->getName()}\" requires a value.");
+			}
+			
+			//filter the value
+			$filter = $option->getFilter();
+			if ($filter) {
+				$value = call_user_func($filter, $value);
+			}
+						
+			//update the value
+			$console->setOption($option->getLongName(), $value); //TODO: what if they used short param
+						
+			//validate the value
+			$validator = $option->getValidator();
+			if ($validator) {
+				if (call_user_func($validator, $value) == false) {
+					throw new \RuntimeException("Option \"{$option->getName()}\" is invalid.");
+				}
+			}
+			
 		}
-
+		
 	}
 
 } 
