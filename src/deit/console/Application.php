@@ -1,6 +1,7 @@
 <?php
 
 namespace deit\console;
+use \deit\stream\AnsiOutputStream;
 
 /**
  * Console application
@@ -26,6 +27,14 @@ class Application {
 	 */
 	public function __construct(ConsoleInterface $console = null) {
 		$this->console = $console;
+	}
+
+	/**
+	 * Gets the path
+	 * @return  string
+	 */
+	public function getPath() {
+		return realpath(dirname($_SERVER['SCRIPT_NAME']));
 	}
 
 	/**
@@ -104,6 +113,7 @@ class Application {
 		}
 
 		//add the command
+		$command->setApplication($this);
 		$this->commands[$name] = $command;
 
 		return $this;
@@ -127,26 +137,88 @@ class Application {
 		
 		//get the command to run
 		if (!($command = $this->getCommand($name))) {
-			throw new \InvalidArgumentException("No commands have been added.");
+			throw new \InvalidArgumentException("Command \"{$name}\" not found.");
 		}
 
-		//validate the command definition TODO: move this to an event listener on the command
+		//start listening for signals
+		$this->setUpSignalHandler();
+
 		try {
-			$command->getDefinition()->validate($console);
+
+			//validate the command definition
+			$command->getDefinition()->validate($console); //TODO: move this to an event listener on the command
+
 		} catch (\Exception $exception) {
-			$console->getErrorStream()->write("Error: {$exception->getMessage()}\n");
+
+			//report the exception
+			$this->writeError($console, "Error: {$exception->getMessage()}");
+
+			//stop listening for signals
+			$this->tearDownSignalHandler();
+
 			return -1;
 		}
-		
-		//run the command
+
 		try {
+
+			//run the command
 			$exitCode = $command->main($console);
+
 		} catch (\Exception $exception) {
-			$console->getErrorStream()->write("Error: {$exception->getMessage()}\n");
+
+			//report the exception
+			$this->writeError($console, "Error: {$exception->getMessage()}");
+
+			//stop listening for signals
+			$this->tearDownSignalHandler();
+
 			return -1;
 		}
+
+		//stop listening for signals
+		$this->tearDownSignalHandler();
 
 		return $exitCode;
+	}
+
+	/**
+	 * Writes an error to stderr
+	 * @param ConsoleInterface $console
+	 * @param                  $msg
+	 */
+	private function writeError(ConsoleInterface $console, $msg) {
+		$ansi = new AnsiOutputStream($console->getErrorStream());
+		$ansi->fg(AnsiOutputStream::COLOUR_RED);
+		$ansi->write($msg);
+		$ansi->write("\n");
+	}
+
+	/**
+	 * Sets up the signal handler
+	 */
+	private function setUpSignalHandler() {
+		if (function_exists('pcntl_signal')) {
+			declare(ticks = 100);
+			pcntl_signal(SIGTERM, array($this, 'signalHandler'));
+		}
+	}
+
+	/**
+	 * Tears down the signal handler
+	 */
+	private function tearDownSignalHandler() {
+		if (function_exists('pcntl_signal')) {
+			pcntl_signal(SIGTERM, SIG_DFL);
+		}
+	}
+
+	/**
+	 * Handles the signal
+	 * @param   int     $signal
+	 * @return  void
+	 */
+	private function signalHandler($signal) {
+		$this->getEventManager()->trigger('interrupt');
 	}
 
 } 

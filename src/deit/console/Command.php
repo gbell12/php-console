@@ -16,6 +16,12 @@ abstract class Command {
 	private $definition;
 
 	/**
+	 * The application
+	 * @var     Application
+	 */
+	private $application;
+
+	/**
 	 * Constructs the command
 	 */
 	public function __construct() {
@@ -29,6 +35,24 @@ abstract class Command {
 	 */
 	public function getDefinition() {
 		return $this->definition;
+	}
+
+	/**
+	 * Gets the application
+	 * @return  Application
+	 */
+	public function getApplication() {
+		return $this->application;
+	}
+
+	/**
+	 * Sets the application
+	 * @param   Application $application
+	 * @return $this
+	 */
+	public function setApplication(Application $application) {
+		$this->application = $application;
+		return $this;
 	}
 
 	/**

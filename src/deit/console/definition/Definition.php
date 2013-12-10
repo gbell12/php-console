@@ -132,44 +132,54 @@ class Definition {
 	}
 
 	/**
-	 * Validates that the console meets the definition
+	 * Validates that the console options/arguments meets the definition
 	 * @param   ConsoleInterface $console
 	 * @return  $this
+	 * @throws
 	 */
 	public function validate(ConsoleInterface $console) {
 
 		foreach ($this->getOptions() as $option) {
-			
-			//check whether the option is specified
-			if ($option->isRequired() && !$console->hasOption($option->getNames())) {
-				throw new \RuntimeException("Option \"{$option->getName()}\" is required.");
-			}
-						
-			//get the value
-			$value = $console->getOption($option->getNames(), $option->getDefault());
-			
-			//check whether a value is specified
-			if ($option->isValueRequired() && is_null($value)) {
-				throw new \RuntimeException("Option \"{$option->getName()}\" requires a value.");
-			}
-			
-			//filter the value
-			$filter = $option->getFilter();
-			if ($filter) {
-				$value = call_user_func($filter, $value);
-			}
-						
-			//update the value
-			$console->setOption($option->getLongName(), $value); //TODO: what if they used short param
-						
-			//validate the value
-			$validator = $option->getValidator();
-			if ($validator) {
-				if (call_user_func($validator, $value) == false) {
-					throw new \RuntimeException("Option \"{$option->getName()}\" is invalid.");
+
+			if ($console->hasOption($option->getNames())) {
+
+				//get the value
+				$value = $console->getOption($option->getNames(), $option->getDefault());
+
+				//check whether a value is required
+				if ($option->isValueRequired() && is_null($value)) {
+					throw new \RuntimeException("Option \"{$option->getName()}\" requires a value.");
 				}
+
+				//filter the value
+				$filter = $option->getFilter();
+				if ($filter) {
+					$value = call_user_func($filter, $value);
+				}
+
+				//update the value
+				$console->setOption($option->getLongName(), $value); //TODO: what if they used short param
+
+				//validate the value
+				$validator = $option->getValidator();
+				if ($validator) {
+					if (call_user_func($validator, $value) == false) {
+						throw new \RuntimeException("Option \"{$option->getName()}\" is invalid.");
+					}
+				}
+
+			} else {
+
+				//check whether the option is required
+				if ($option->isRequired()) {
+					throw new \RuntimeException("Option \"{$option->getName()}\" is required.");
+				}
+
+				//update the value
+				$console->setOption($option->getLongName(), $option->getDefault());
+
 			}
-			
+
 		}
 		
 	}
