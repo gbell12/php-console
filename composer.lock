@@ -3,7 +3,7 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "d7289ef807f2bb9975fcf13102fe6926",
+    "hash": "8f5d601b98976baad0d20067120ac865",
     "packages": [
         {
             "name": "digitaledgeit/event",
