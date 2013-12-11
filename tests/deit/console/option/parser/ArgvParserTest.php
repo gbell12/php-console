@@ -11,7 +11,6 @@ class ArgvParserTest extends \PHPUnit_Framework_TestCase {
 
 	public function test() {
 
-
 		$console    = new GenericConsole();
 		$argv       = array(
 			'my-cmd.php',

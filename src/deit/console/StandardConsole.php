@@ -22,11 +22,6 @@ class StandardConsole extends AbstractConsole {
 		$this->stdout = new PhpOutputStream(STDOUT, false);
 		$this->stderr = new PhpOutputStream(STDERR, false);
 
-		//get the arguments
-		if (is_null($argv)) {
-			$argv = $_SERVER['argv'];
-		}
-
 		//parse the arguments
 		$parser = new ArgvParser($argv);
 		$parser->parse($this);

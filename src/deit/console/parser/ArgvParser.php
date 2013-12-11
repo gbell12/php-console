@@ -31,6 +31,7 @@ class ArgvParser implements ParserInterface {
 
 		if (is_null($argv)) {
 			$this->argv = $_SERVER['argv'];
+			array_shift($this->argv); //remove the command argument
 		} else {
 			$this->argv = $argv;
 		}

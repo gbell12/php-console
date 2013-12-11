@@ -13,6 +13,7 @@
 	],
 	"require": {
 		"php": "~5.3",
+		"digitaledgeit/event": "master-dev",
 		"digitaledgeit/stream": "master-dev"
 	},
 	"require-dev": {

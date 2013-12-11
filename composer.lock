@@ -3,20 +3,63 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "c7c71c4bd1644974896e2f07739e27f5",
+    "hash": "d7289ef807f2bb9975fcf13102fe6926",
     "packages": [
+        {
+            "name": "digitaledgeit/event",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/digitaledgeit/php-event.git",
+                "reference": "b78552ac5624739a754257530701fb17da681ea1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/digitaledgeit/php-event/zipball/b78552ac5624739a754257530701fb17da681ea1",
+                "reference": "b78552ac5624739a754257530701fb17da681ea1",
+                "shasum": ""
+            },
+            "require": {
+                "php": "~5.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~3.7"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "deit\\event\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "CC-BY-NC-ND-3.0"
+            ],
+            "authors": [
+                {
+                    "name": "James Newell",
+                    "email": "james@digitaledgeit.com.au"
+                }
+            ],
+            "description": "Library for events",
+            "homepage": "http://www.digitaledgeit.com.au",
+            "keywords": [
+                "event"
+            ],
+            "time": "2013-12-11 02:54:57"
+        },
         {
             "name": "digitaledgeit/stream",
             "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/digitaledgeit/php-stream.git",
-                "reference": "a465279eccfde512eedbd182b2751b78e6b26711"
+                "reference": "935630d251c8763ccf59a9c8455bc511df76f79d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/digitaledgeit/php-stream/zipball/a465279eccfde512eedbd182b2751b78e6b26711",
-                "reference": "a465279eccfde512eedbd182b2751b78e6b26711",
+                "url": "https://api.github.com/repos/digitaledgeit/php-stream/zipball/935630d251c8763ccf59a9c8455bc511df76f79d",
+                "reference": "935630d251c8763ccf59a9c8455bc511df76f79d",
                 "shasum": ""
             },
             "require": {
@@ -46,7 +89,7 @@
             "keywords": [
                 "stream"
             ],
-            "time": "2013-11-26 01:04:31"
+            "time": "2013-12-11 02:53:25"
         }
     ],
     "packages-dev": [
@@ -419,17 +462,17 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v2.3.7",
+            "version": "v2.4.0",
             "target-dir": "Symfony/Component/Yaml",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Yaml.git",
-                "reference": "c1bda5b459d792cb253de12c65beba3040163b2b"
+                "reference": "1ae235a1b9d3ad3d9f3860ff20acc072df95b7f5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Yaml/zipball/c1bda5b459d792cb253de12c65beba3040163b2b",
-                "reference": "c1bda5b459d792cb253de12c65beba3040163b2b",
+                "url": "https://api.github.com/repos/symfony/Yaml/zipball/1ae235a1b9d3ad3d9f3860ff20acc072df95b7f5",
+                "reference": "1ae235a1b9d3ad3d9f3860ff20acc072df95b7f5",
                 "shasum": ""
             },
             "require": {
@@ -438,7 +481,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "2.3-dev"
+                    "dev-master": "2.4-dev"
                 }
             },
             "autoload": {
@@ -462,7 +505,7 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "http://symfony.com",
-            "time": "2013-10-17 11:48:01"
+            "time": "2013-11-26 16:40:27"
         }
     ],
     "aliases": [
@@ -470,6 +513,7 @@
     ],
     "minimum-stability": "stable",
     "stability-flags": {
+        "digitaledgeit/event": 20,
         "digitaledgeit/stream": 20
     },
     "platform": {

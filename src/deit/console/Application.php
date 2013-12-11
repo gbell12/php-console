@@ -1,6 +1,9 @@
 <?php
 
 namespace deit\console;
+use \deit\console\command\CommandInterface;
+use \deit\event\EventManager;
+use \deit\event\EventListenerInterface;
 use \deit\stream\AnsiOutputStream;
 
 /**
@@ -9,24 +12,34 @@ use \deit\stream\AnsiOutputStream;
  */
 class Application {
 
+	const EVENT_DISPATCH    = 'dispatch';
+	const EVENT_INTERRUPT   = 'interrupt';
+	const EVENT_EXCEPTION   = 'exception';
+
 	/**
-	 * The command console
-	 * @var     ConsoleInterface
+	 * The event manager
+	 * @var     EventManager
 	 */
-	private $console;
+	private $em;
 
 	/**
 	 * The commands
 	 * @var     Command[]
 	 */
-	private $commands = array();
+	private $commands;
 
 	/**
 	 * Constructs the application
-	 * @param   ConsoleInterface    $console    The command console
 	 */
-	public function __construct(ConsoleInterface $console = null) {
-		$this->console = $console;
+	public function __construct() {
+		$this->em       = new EventManager();
+		$this->commands = array();
+
+		//handle exceptions by printing the messages
+		$this->em->attach(self::EVENT_EXCEPTION, function($event) {
+			$this->printError($event->getConsole(), $event->getException()->getMessage());
+		});
+
 	}
 
 	/**
@@ -38,19 +51,16 @@ class Application {
 	}
 
 	/**
-	 * Gets the console
-	 * @return  ConsoleInterface
+	 * Gets the event manager
+	 * @return  EventManager
 	 */
-	public function getConsole() {
-		if (is_null($this->console)) {
-			$this->console = new StandardConsole();
-		}
-		return $this->console;
+	public function getEventManager() {
+		return $this->em;
 	}
-	
+
 	/**
 	 * Gets the commands
-	 * @return  Command[]
+	 * @return  CommandInterface[]
 	 */
 	public function getCommands() {
 		return $this->commands;
@@ -61,14 +71,18 @@ class Application {
 	 * @param   string  $name       The command name
 	 * @return  bool
 	 */
-	public function hasCommand($name) {
-		return isset($this->commands[$name]);
+	public function hasCommand($name = null) {
+		if (empty($name)) {
+			return count($this->commands) > 1;
+		} else {
+			return isset($this->commands[$name]);
+		}
 	}
 
 	/**
 	 * Gets the command with the specified name has been added
 	 * @param   string  $name       The command name
-	 * @return  Command|null
+	 * @return  CommandInterface|null
 	 * @throws
 	 */
 	public function getCommand($name = null) {
@@ -100,11 +114,11 @@ class Application {
 
 	/**
 	 * Adds a command
-	 * @param   Command $command
+	 * @param   CommandInterface $command
 	 * @return  $this
 	 * @throws
 	 */
-	public function addCommand(Command $command) {
+	public function addCommand(CommandInterface $command) {
 
 		//validate the name
 		$name = $command->getDefinition()->getName();
@@ -113,7 +127,6 @@ class Application {
 		}
 
 		//add the command
-		$command->setApplication($this);
 		$this->commands[$name] = $command;
 
 		return $this;
@@ -121,37 +134,117 @@ class Application {
 
 	/**
 	 * Runs the specified command
-	 * @param   string          $name       The command name
+	 * @param   ConsoleInterface    $console
 	 * @return  int                         The command exit code
 	 * @throws
 	 */
-	public function run($name = null) {
+	public function run(ConsoleInterface $console = null) {
 
 		//get the console
-		$console = $this->getConsole();
-		
-		//check for a name argument
-		if (is_null($name)) {
-			$name = $console->getArgument(1);
+		if (is_null($console)) {
+			$console = new StandardConsole();
 		}
-		
-		//get the command to run
-		if (!($command = $this->getCommand($name))) {
-			throw new \InvalidArgumentException("Command \"{$name}\" not found.");
+
+		try {
+
+			//get the command name
+			if (count($this->commands) > 1) {
+
+				//check for the command argument
+				if (!$console->hasArgument(0)) {
+					throw new \InvalidArgumentException('Command argument required');
+				}
+
+				//get the name argument
+				$name = $console->getArgument(0);
+
+				//remove the command argument from the arguments
+				$argv = $console->getArguments();
+				array_shift($argv);
+				$console->setArguments($argv);
+
+			} else {
+				$name = null;
+			}
+
+			//get the command to run
+			if (!($command = $this->getCommand($name))) {
+				throw new \InvalidArgumentException("Command \"{$name}\" not found.");
+			}
+
+		} catch (\Exception $exception) {
+
+			//trigger the exception event
+			try {
+				$eevent = new Event(self::EVENT_EXCEPTION);
+				$eevent
+					->setConsole($console)
+					->setApplication($this)
+					->setException($exception)
+				;
+				$this->em->trigger($eevent);
+			} catch (\Exception $exception) {
+				$this->printError($console, "An unhandled exception occurred: {$exception->getMessage()}");
+			}
+
+			return -1;
+		}
+
+		//create the event
+		$event = new Event(self::EVENT_DISPATCH);
+		$event
+			->setConsole($console)
+			->setApplication($this)
+			->setCommand($command)
+		;
+
+		return $this->dispatch($event);
+	}
+
+	/**
+	 * Runs the specified command
+	 * @param   Event          $event       The event
+	 * @return  void
+	 * @throws
+	 */
+	public function dispatch(Event $event) {
+
+		//get the command
+		$command = $event->getCommand();
+
+		//check for a command
+		if (is_null($command)) {
+			throw new \InvalidArgumentException('Command required');
 		}
 
 		//start listening for signals
 		$this->setUpSignalHandler();
 
+		//attach the command to the event
+		if ($command instanceof EventListenerInterface) {
+			$command->attach($this->getEventManager());
+		}
+
 		try {
 
-			//validate the command definition
-			$command->getDefinition()->validate($console); //TODO: move this to an event listener on the command
+			//trigger the event
+			$this->em->trigger($event);
 
 		} catch (\Exception $exception) {
 
-			//report the exception
-			$this->writeError($console, "Error: {$exception->getMessage()}");
+			//trigger the exception event
+			try {
+				$eevent = new Event(self::EVENT_EXCEPTION);
+				$eevent
+					->setConsole($event->getConsole())
+					->setApplication($this)
+					->setCommand($command)
+					->setException($exception)
+				;
+				$this->em->trigger($eevent);
+			} catch (\Exception $exception) {
+				$this->printError($event->getConsole(), "An unhandled exception occurred: {$exception->getMessage()}");
+			}
 
 			//stop listening for signals
 			$this->tearDownSignalHandler();
@@ -159,26 +252,15 @@ class Application {
 			return -1;
 		}
 
-		try {
-
-			//run the command
-			$exitCode = $command->main($console);
-
-		} catch (\Exception $exception) {
-
-			//report the exception
-			$this->writeError($console, "Error: {$exception->getMessage()}");
-
-			//stop listening for signals
-			$this->tearDownSignalHandler();
-
-			return -1;
+		//detach the command from the event
+		if ($command instanceof EventListenerInterface) {
+			$command->detach($this->getEventManager());
 		}
 
 		//stop listening for signals
 		$this->tearDownSignalHandler();
 
-		return $exitCode;
+		return $event->getExitCode();
 	}
 
 	/**
@@ -186,11 +268,10 @@ class Application {
 	 * @param ConsoleInterface $console
 	 * @param                  $msg
 	 */
-	private function writeError(ConsoleInterface $console, $msg) {
+	private function printError(ConsoleInterface $console, $msg) {
 		$ansi = new AnsiOutputStream($console->getErrorStream());
 		$ansi->fg(AnsiOutputStream::COLOUR_RED);
-		$ansi->write($msg);
-		$ansi->write("\n");
+		$ansi->write("ERROR: ".$msg."\n");
 	}
 
 	/**
@@ -198,7 +279,7 @@ class Application {
 	 */
 	private function setUpSignalHandler() {
 		if (function_exists('pcntl_signal')) {
-			declare(ticks = 100);
+			pcntl_signal(SIGINT, array($this, 'signalHandler'));
 			pcntl_signal(SIGTERM, array($this, 'signalHandler'));
 		}
 	}
@@ -208,6 +289,7 @@ class Application {
 	 */
 	private function tearDownSignalHandler() {
 		if (function_exists('pcntl_signal')) {
+			pcntl_signal(SIGINT, SIG_DFL);
 			pcntl_signal(SIGTERM, SIG_DFL);
 		}
 	}
@@ -217,8 +299,25 @@ class Application {
 	 * @param   int     $signal
 	 * @return  void
 	 */
-	private function signalHandler($signal) {
-		$this->getEventManager()->trigger('interrupt');
+	public function signalHandler($signal) {
+		if ($signal == SIGINT || $signal == SIGTERM) {
+
+			//create the event
+			$event = new Event(self::EVENT_INTERRUPT);
+			$event  //TODO: set command and console objects
+				->setApplication($this)
+				->setExitCode($signal)
+			;
+
+			//trigger the event and let cleanup happen
+			$this->getEventManager()->trigger($event);
+
+			//check if we're allowed to exit
+
+			//exit
+			exit($event->getExitCode());
+
+		}
 	}
 
 } 
