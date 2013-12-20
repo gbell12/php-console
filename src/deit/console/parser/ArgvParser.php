@@ -1,7 +1,7 @@
 <?php
 
 namespace deit\console\parser;
-use deit\console\ConsoleInterface;
+use deit\console\Event;
 
 /**
  * Console parser
@@ -41,7 +41,7 @@ class ArgvParser implements ParserInterface {
 	/**
 	 * @inheritdoc
 	 */
-	public function parse(ConsoleInterface $console) {
+	public function parse(Event $event) {
 
 		//parse options and arguments
 		while ($arg = current($this->argv)) {
@@ -49,11 +49,11 @@ class ArgvParser implements ParserInterface {
 			if ($arg == '--') {
 				break; //only parse arguments now
 			} else if (strpos($arg, '--') === 0) {
-				$this->parseLongOption($console, $arg);
+				$this->parseLongOption($event, $arg);
 			} else if (strpos($arg, '-') === 0) {
-				$this->parseShortOption($console, $arg);
+				$this->parseShortOption($event, $arg);
 			} else {
-				$this->parseArgument($console, $arg);
+				$this->parseArgument($event, $arg);
 			}
 
 			next($this->argv);
@@ -64,12 +64,12 @@ class ArgvParser implements ParserInterface {
 
 	/**
 	 * Parses an argument starting with the long option prefix "--"
-	 * @param   ConsoleInterface    $console
+	 * @param   Event               $event
 	 * @param   string              $arg
 	 * @return  $this
 	 * @throws
 	 */
-	public function parseLongOption(ConsoleInterface $console, $arg) {
+	public function parseLongOption(Event $event, $arg) {
 
 		//get the name and value
 		if (($separator = strpos($arg, '=')) !== false) {
@@ -87,19 +87,19 @@ class ArgvParser implements ParserInterface {
 		}
 
 		//set the option value
-		$console->setOption($name, $value);
+		$event->setOption($name, $value);
 
 		return $this;
 	}
 
 	/**
 	 * Parses an argument starting with the short option prefix "-"
-	 * @param   ConsoleInterface    $console
+	 * @param   Event               $event
 	 * @param   string              $arg
 	 * @return  $this
 	 * @throws
 	 */
-	public function parseShortOption(ConsoleInterface $console, $arg) {
+	public function parseShortOption(Event $event, $arg) {
 
 		$i = 1;
 		$len = strlen($arg);
@@ -116,7 +116,7 @@ class ArgvParser implements ParserInterface {
 				$value = strlen($arg) > $i+2 ? substr($arg, $i+2) : '';
 
 				//set the option value
-				$console->setOption($shortcut, $value);
+				$event->setOption($shortcut, $value);
 
 				//we've finished reading the argument
 				break;
@@ -124,7 +124,7 @@ class ArgvParser implements ParserInterface {
 			} else {
 
 				//set the option value
-				$console->setOption($shortcut, null);
+				$event->setOption($shortcut, null);
 
 			}
 
@@ -136,13 +136,13 @@ class ArgvParser implements ParserInterface {
 	
 	/**
 	 * Parses an argument
-	 * @param   ConsoleInterface    $console
+	 * @param   Event               $event
 	 * @param   string              $arg
 	 * @return  $this
 	 * @throws
 	 */
-	public function parseArgument(ConsoleInterface $console, $arg) {
-		$console->setArgument($this->argIndex++, $arg);
+	public function parseArgument(Event $event, $arg) {
+		$event->setArgument($this->argIndex++, $arg);
 	}
 
 } 

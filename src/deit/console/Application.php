@@ -2,9 +2,12 @@
 
 namespace deit\console;
 use \deit\console\command\CommandInterface;
+use deit\console\parser\ArgvParser;
 use \deit\event\EventManager;
 use \deit\event\EventListenerInterface;
 use \deit\stream\AnsiOutputStream;
+use deit\stream\PhpInputStream;
+use deit\stream\PhpOutputStream;
 
 /**
  * Console application
@@ -35,9 +38,40 @@ class Application {
 		$this->em       = new EventManager();
 		$this->commands = array();
 
+
+		//handle dispatch by running the command
+		$this->em->attach(self::EVENT_DISPATCH, function($event) {
+
+			//get the command
+			$command = $event->getCommand();
+			$command->setEvent($event);
+
+			//check for a command
+			if (is_null($command)) {
+				throw new \InvalidArgumentException('Command required');
+			}
+
+			//attach the command to the event
+			if ($command instanceof EventListenerInterface) {
+				$command->attach($this->getEventManager());
+			}
+
+			//run the command
+			$exitCode = $command->dispatch($event);
+
+			//detach the command from the event
+			if ($command instanceof EventListenerInterface) {
+				$command->detach($this->getEventManager());
+			}
+
+			//set the exit code
+			$event->setExitCode($exitCode);
+
+		});
+
 		//handle exceptions by printing the messages
 		$this->em->attach(self::EVENT_EXCEPTION, function($event) {
-			$this->printError($event->getConsole(), $event->getException()->getMessage());
+			$this->printError($event, $event->getException()->getMessage());
 		});
 
 	}
@@ -134,16 +168,35 @@ class Application {
 
 	/**
 	 * Runs the specified command
-	 * @param   ConsoleInterface    $console
+	 * @param   Event          $event       The event
 	 * @return  int                         The command exit code
 	 * @throws
 	 */
-	public function run(ConsoleInterface $console = null) {
+	public function run(Event $event = null) {
 
-		//get the console
-		if (is_null($console)) {
-			$console = new StandardConsole();
+		if ($event == null) {
+
+			//create the event
+			$event = new Event();
+			$event
+				->setName(self::EVENT_DISPATCH)
+				->setApplication($this)
+				->setInputStream(new PhpInputStream(STDIN, false))
+				->setOutputStream(new PhpOutputStream(STDOUT, false))
+				->setErrorStream(new PhpOutputStream(STDERR, false))
+				->setOptions(array())
+				->setArguments(array())
+			;
+
+
+			//parse the command line arguments
+			$parser = new ArgvParser();
+			$parser->parse($event);
+
 		}
+
+		//start listening for signals
+		$this->setUpSignalHandler();
 
 		try {
 
@@ -151,17 +204,17 @@ class Application {
 			if (count($this->commands) > 1) {
 
 				//check for the command argument
-				if (!$console->hasArgument(0)) {
+				if (!$event->hasArgument(0)) {
 					throw new \InvalidArgumentException('Command argument required');
 				}
 
 				//get the name argument
-				$name = $console->getArgument(0);
+				$name = $event->getArgument(0);
 
 				//remove the command argument from the arguments
-				$argv = $console->getArguments();
+				$argv = $event->getArguments();
 				array_shift($argv);
-				$console->setArguments($argv);
+				$event->setArguments($argv);
 
 			} else {
 				$name = null;
@@ -172,89 +225,30 @@ class Application {
 				throw new \InvalidArgumentException("Command \"{$name}\" not found.");
 			}
 
-		} catch (\Exception $exception) {
-
-			//trigger the exception event
-			try {
-				$eevent = new Event(self::EVENT_EXCEPTION);
-				$eevent
-					->setConsole($console)
-					->setApplication($this)
-					->setException($exception)
-				;
-				$this->em->trigger($eevent);
-			} catch (\Exception $exception) {
-				$this->printError($console, "An unhandled exception occurred: {$exception->getMessage()}");
-			}
-
-			return -1;
-		}
-
-		//create the event
-		$event = new Event(self::EVENT_DISPATCH);
-		$event
-			->setConsole($console)
-			->setApplication($this)
-			->setCommand($command)
-		;
-
-		return $this->dispatch($event);
-	}
-
-	/**
-	 * Runs the specified command
-	 * @param   Event          $event       The event
-	 * @return  void
-	 * @throws
-	 */
-	public function dispatch(Event $event) {
-
-		//get the command
-		$command = $event->getCommand();
-
-		//check for a command
-		if (is_null($command)) {
-			throw new \InvalidArgumentException('Command required');
-		}
-
-		//start listening for signals
-		$this->setUpSignalHandler();
-
-		//attach the command to the event
-		if ($command instanceof EventListenerInterface) {
-			$command->attach($this->getEventManager());
-		}
-
-		try {
+			//set the command
+			$event->setCommand($command);
 
 			//trigger the event
 			$this->em->trigger($event);
 
 		} catch (\Exception $exception) {
 
+			//stop listening for signals
+			$this->tearDownSignalHandler();
+
 			//trigger the exception event
 			try {
-				$eevent = new Event(self::EVENT_EXCEPTION);
+				$eevent = clone $event;
 				$eevent
-					->setConsole($event->getConsole())
-					->setApplication($this)
-					->setCommand($command)
+					->setName(self::EVENT_EXCEPTION)
 					->setException($exception)
 				;
 				$this->em->trigger($eevent);
 			} catch (\Exception $exception) {
-				$this->printError($event->getConsole(), "An unhandled exception occurred: {$exception->getMessage()}");
+				$this->printError($event, "An unhandled exception occurred: {$exception->getMessage()}");
 			}
 
-			//stop listening for signals
-			$this->tearDownSignalHandler();
-
 			return -1;
-		}
-
-		//detach the command from the event
-		if ($command instanceof EventListenerInterface) {
-			$command->detach($this->getEventManager());
 		}
 
 		//stop listening for signals
@@ -265,11 +259,11 @@ class Application {
 
 	/**
 	 * Writes an error to stderr
-	 * @param ConsoleInterface $console
-	 * @param                  $msg
+	 * @param   Event           $event
+	 * @param   string          $msg
 	 */
-	private function printError(ConsoleInterface $console, $msg) {
-		$ansi = new AnsiOutputStream($console->getErrorStream());
+	private function printError(Event $event, $msg) {
+		$ansi = new AnsiOutputStream($event->getErrorStream());
 		$ansi->fg(AnsiOutputStream::COLOUR_RED);
 		$ansi->write("ERROR: ".$msg."\n");
 	}

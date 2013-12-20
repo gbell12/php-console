@@ -1,7 +1,7 @@
 <?php
 
 namespace deit\console\definition;
-use deit\console\ConsoleInterface;
+use deit\console\Event;
 
 /**
  * Console definition
@@ -133,18 +133,23 @@ class Definition {
 
 	/**
 	 * Validates that the console options/arguments meets the definition
-	 * @param   ConsoleInterface $console
+	 * @param   Event   $event
 	 * @return  $this
 	 * @throws
 	 */
-	public function validate(ConsoleInterface $console) {
+	public function validate(Event $event) {
 
 		foreach ($this->getOptions() as $option) {
 
-			if ($console->hasOption($option->getNames())) {
+			if ($event->hasOption($option->getNames())) {
 
 				//get the value
-				$value = $console->getOption($option->getNames(), $option->getDefault());
+				$value = $event->getOption($option->getNames(), $option->getDefault());
+
+				//check whether a value is allowed
+				if (!$option->isValueAllowed() && !is_null($value)) {
+					throw new \RuntimeException("Option \"{$option->getName()}\" cannot have a value.");
+				}
 
 				//check whether a value is required
 				if ($option->isValueRequired() && is_null($value)) {
@@ -158,7 +163,7 @@ class Definition {
 				}
 
 				//update the value
-				$console->setOption($option->getLongName(), $value); //TODO: what if they used short param
+				$event->setOption($option->getLongName(), $value); //TODO: what if they used short param
 
 				//validate the value
 				$validator = $option->getValidator();
@@ -176,7 +181,9 @@ class Definition {
 				}
 
 				//update the value
-				$console->setOption($option->getLongName(), $option->getDefault());
+				if ($option->isValueAllowed()) {
+					$event->setOption($option->getLongName(), $option->getDefault());
+				}
 
 			}
 

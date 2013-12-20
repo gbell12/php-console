@@ -42,6 +42,16 @@ abstract class Command implements CommandInterface, EventListenerInterface {
 	}
 
 	/**
+	 * Sets the event
+	 * @param   Event   $event
+	 * @return $this
+	 */
+	public function setEvent(Event $event) {
+		$this->event = $event;
+		return $this;
+	}
+
+	/**
 	 * Gets the console definition
 	 * @return  Definition
 	 */
@@ -64,7 +74,6 @@ abstract class Command implements CommandInterface, EventListenerInterface {
 	 * @inheritdoc
 	 */
 	public function attach(EventManager $em) {
-		$em->attach(Application::EVENT_DISPATCH, array($this, 'dispatch'));
 		$em->attach(Application::EVENT_INTERRUPT, array($this, 'interrupt'));
 	}
 
@@ -72,7 +81,6 @@ abstract class Command implements CommandInterface, EventListenerInterface {
 	 * @inheritdoc
 	 */
 	public function detach(EventManager $em) {
-		$em->detach(Application::EVENT_DISPATCH, array($this, 'dispatch'));
 		$em->detach(Application::EVENT_INTERRUPT, array($this, 'interrupt'));
 	}
 
@@ -83,16 +91,13 @@ abstract class Command implements CommandInterface, EventListenerInterface {
 	public function dispatch(Event $event) {
 
 		//set the event
-		$this->event = $event;
+		$this->setEvent($event);
 
 		//validate the console options
-		$this->getDefinition()->validate($event->getConsole());
+		$this->getDefinition()->validate($event);
 
 		//execute the console command
-		$exitCode = $this->execute();
-
-		//store the exit code
-		$event->setExitCode($exitCode);
+		return $this->execute();
 	}
 
 	/**

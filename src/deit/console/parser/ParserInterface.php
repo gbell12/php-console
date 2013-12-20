@@ -1,7 +1,7 @@
 <?php
 
 namespace deit\console\parser;
-use deit\console\ConsoleInterface;
+use deit\console\Event;
 
 /**
  * Console parser
@@ -11,10 +11,10 @@ interface ParserInterface {
 
 	/**
 	 * Parses the input
-	 * @param   ConsoleInterface    $console    The console
+	 * @param   Event           $event    The event
 	 * @return  $this
 	 * @throws
 	 */
-	public function parse(ConsoleInterface $console);
+	public function parse(Event $event);
 
 } 
