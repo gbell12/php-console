@@ -180,9 +180,12 @@ class Definition {
 					throw new \RuntimeException("Option \"{$option->getName()}\" is required.");
 				}
 
-				//update the value
-				if ($option->isValueAllowed()) {
-					$event->setOption($option->getLongName(), $option->getDefault());
+				//get the default value
+				$default = $option->getDefault();
+
+				//set the default value
+				if ($option->isValueAllowed() && !is_null($default)) {
+					$event->setOption($option->getLongName(), $default);
 				}
 
 			}
