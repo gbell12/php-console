@@ -132,6 +132,30 @@ class Definition {
 	}
 
 	/**
+	 * Removes the option
+	 * @param   Option|string $option
+	 * @return  $this
+	 */
+	public function removeOption($option) {
+
+		if ($option instanceof Option) {
+			foreach ($this->options as $i => $o) {
+				if ($o == $option) {
+					unset($this->options[$i]);
+				}
+			}
+		} else {
+			foreach ($this->options as $i => $o) {
+				if ($option == $o->getShortName() || $option == $o->getLongName()) {
+					unset($this->options[$i]);
+				}
+			}
+		}
+
+		return $this;
+	}
+
+	/**
 	 * Validates that the console options/arguments meets the definition
 	 * @param   Event   $event
 	 * @return  $this
@@ -163,7 +187,11 @@ class Definition {
 				}
 
 				//update the value
-				$event->setOption($option->getLongName(), $value); //TODO: what if they used short param
+				if ($event->hasOption($option->getShortName())) {
+					$event->setOption($option->getShortName(), $value);
+				} else {
+					$event->setOption($option->getLongName(), $value);
+				}
 
 				//validate the value
 				$validator = $option->getValidator();
